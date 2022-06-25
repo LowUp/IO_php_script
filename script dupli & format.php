@@ -7,8 +7,9 @@ use PhpOffice\PhpSpreadsheet\IOFactory;
 use Shuchkin\SimpleXLSX;
 
 $date = date("Y-m-d");
-$file = 'noduplicates.xlsx';
-$output = "test-$date.xlsx";
+$file = 'raw_data_export-1655557327.xlsx';
+// $file = 'noduplicates.xlsx';
+$output = "Output-$date.csv";
 $columnTargeted = 1;
 
 $reader = IOFactory::createReader('Xlsx');
@@ -19,10 +20,7 @@ function useRegex($input) {
     return preg_match($regex, $input);
 }
 
-// $input1 = "MNI helene.orsini@fr.transavia.com";
-
-// print_r(useRegex($input1));
-
+// Removes duplicates and wrong input 
 if( $xlsx = SimpleXLSX::parse($file) ){
 
     $emailsContainer = [];
@@ -37,7 +35,7 @@ if( $xlsx = SimpleXLSX::parse($file) ){
             $tempArray = array_push($emailsContainer, $email);
             if(useRegex($email) == 0)
             {
-                print_r("\nWrong input found at line " . $x+1);
+                print_r("\nWrong email format found at line " . $x+1);
                 $sheet->removeRow($x+1, $columnTargeted); // delete row
                 $sheet->insertNewRowBefore($x+1); // insert blank row where the deleted row was originally placed
             }
@@ -51,8 +49,30 @@ if( $xlsx = SimpleXLSX::parse($file) ){
     echo SimpleXLSX::parseError();
 }
 
-$writer = IOFactory::createWriter($spreadsheet, "Xlsx");
+// $writer = IOFactory::createWriter($spreadsheet, "Xlsx");
+// $writer->save($output);
+
+$writer = IOFactory::createWriter($spreadsheet, "Csv");
+$writer -> setEnclosure('');
 $writer->save($output);
 
+
+// Removes blank lines
+print_r("\nloading...");
+$lines = file($output);
+$num_rows = count($lines);
+
+foreach ($lines as $lineNo => $line) {
+    
+    $csv = str_getcsv($line);
+
+    if (!array_filter($csv)) {
+        unset($lines[$lineNo]);
+    }
+}
+
+file_put_contents($output, $lines);
+
+print_r("\nDone...");
 
 ?>
